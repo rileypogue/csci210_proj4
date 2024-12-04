@@ -36,6 +36,7 @@ void sendmsg (char *user, char *target, char *msg) {
 	strcpy(mes.target, target);
 	strcpy(mes.msg, msg);
 
+	mes.msg[sizeof(mes.msg) - 1] = '\0'; // ensure null termination
 	int server = open("serverFIFO", O_WRONLY);
 	if (server == -1) {
 		perror("Error opening serverFIFO");
@@ -43,12 +44,7 @@ void sendmsg (char *user, char *target, char *msg) {
 	}
 
 
-	if (write(server, &mes, sizeof(struct message)) == -1) {
-		perror("Error writing to serverFIFO");
-		close(server);
-		return;
-	}
-
+	write(server, &mes, sizeof(struct message));
 	close(server);
 
 
