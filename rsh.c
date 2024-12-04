@@ -75,7 +75,7 @@ void* messageListener(void *arg) {
 	}
 	
 	close(fifoFD);
-	return NULL;
+	pthread_exit((void*) 0);
 }
 
 
@@ -168,7 +168,6 @@ int main(int argc, char **argv) {
 
 		sendmsg(uName, target, message);
 		continue;
-		printf("What are you doing here?");
 	}
 
 	if (strcmp(cmd,"exit")==0) break;
