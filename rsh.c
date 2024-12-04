@@ -31,11 +31,25 @@ void sendmsg (char *user, char *target, char *msg) {
 	// Send a request to the server to send the message (msg) to the target user (target)
 	// by creating the message structure and writing it to server's FIFO
 
+	struct message mes;
+	strcpy(mes.source, user);
+	strcpy(mes.target, target);
+	strcpy(mes.msg, msg);
+
+	int server = open("serverFIFO", O_WRONLY);
+	if (server == -1) {
+		perror("Error opening serverFIFO");
+		return;
+	}
 
 
+	if (write(server, &mes, sizeof(struct message)) == -1) {
+		perror("Error writing to serverFIFO");
+		close(server);
+		return;
+	}
 
-
-
+	close(server);
 
 
 }
@@ -48,15 +62,30 @@ void* messageListener(void *arg) {
 	// following format
 	// Incoming message from [source]: [message]
 	// put an end of line at the end of the message
+	const char *fifoName = (const char *) arg;
+	int fifoFD = open(fifoName, O_RDONLY);
+	if (fifoFD == -1) {
+		perror("Error opening FIFO");
+		return NULL;
+	}
 
-
-
-
-
-
-	pthread_exit((void*)0);
+	struct message MSG;
+	while (1) { // loop to listen for incoming message
+		ssize_t bytesR = read(fifoFD, &MSG, sizeof(struct message));
+		if (bytesR == sizeof(struct message)) {
+			printf("Incoming message from %s: %s\n", MSG.source, MSG.msg);
+			fflush(stdout);
+		}
+	}
+	
+	close(fifoFD);
+	return NULL;
 }
 
+
+
+
+	
 int isAllowed(const char*cmd) {
 	int i;
 	for (i=0;i<N;i++) {
@@ -85,9 +114,13 @@ int main(int argc, char **argv) {
 
     // TODO:
     // create the message listener thread
+	char *fifoName = "serverFIFO";
+	pthread_t listenerThread;
 
-
-
+	if (pthread_create(&listenerThread, NULL, messageListener, (void *)fifoName) != 0) {
+		perror("Error creating thread");
+		return 1;
+	}
 
 
     while (1) {
@@ -125,15 +158,21 @@ int main(int argc, char **argv) {
  		// printf("sendmsg: you have to enter a message\n");
 
 
+		char *target = strtok(NULL, " ");
+		if (target == NULL) {
+			printf("sendmsg: you have to specify target user\n");
+			continue;
+		}
 
+		char *message = strtok(NULL, "\0");
+		if (message == NULL) {
+			printf("sendmsg: you have to enter a message\n");
+			continue;
+		}
 
-
-
-
-
-
-
+		sendmsg(uName, target, message);
 		continue;
+		printf("What are you doing here?");
 	}
 
 	if (strcmp(cmd,"exit")==0) break;
