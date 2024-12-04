@@ -62,15 +62,17 @@ void* messageListener(void *arg) {
 	int fifoFD = open(fifoName, O_RDONLY);
 	if (fifoFD == -1) {
 		perror("Error opening FIFO");
-		return NULL;
+		pthread_exit((void *)1);
 	}
 
 	struct message MSG;
 	while (1) { // loop to listen for incoming message
 		ssize_t bytesR = read(fifoFD, &MSG, sizeof(struct message));
 		if (bytesR == sizeof(struct message)) {
-			printf("Incoming message from %s: %s\n", MSG.source, MSG.msg);
-			fflush(stdout);
+			if (strcmp(MSG.target, uName) == 0) {
+				printf("Incoming message from %s: %s\n", MSG.source, MSG.msg);
+				fflush(stdout);
+			}
 		}
 	}
 	
