@@ -43,7 +43,7 @@ int main() {
 			perror("Error opening target FIFO");
 			continue;
 		}
-
+		
 		write(target, &req, sizeof(struct message));
 
 		close(target);

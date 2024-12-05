@@ -36,7 +36,6 @@ void sendmsg (char *user, char *target, char *msg) {
 	strcpy(mes.target, target);
 	strcpy(mes.msg, msg);
 
-	mes.msg[sizeof(mes.msg) - 1] = '\0'; // ensure null termination
 	int server = open("serverFIFO", O_WRONLY);
 	if (server == -1) {
 		perror("Error opening serverFIFO");
@@ -58,8 +57,8 @@ void* messageListener(void *arg) {
 	// following format
 	// Incoming message from [source]: [message]
 	// put an end of line at the end of the message
-	const char *fifoName = (const char *) arg;
-	int fifoFD = open(fifoName, O_RDONLY);
+
+	int fifoFD = open(uName, O_RDONLY);
 	if (fifoFD == -1) {
 		perror("Error opening FIFO");
 		pthread_exit((void *)1);
@@ -71,8 +70,10 @@ void* messageListener(void *arg) {
 		if (bytesR == sizeof(struct message)) {
 			if (strcmp(MSG.target, uName) == 0) {
 				printf("Incoming message from %s: %s\n", MSG.source, MSG.msg);
-				fflush(stdout);
-			}
+				}
+		}
+		else {
+			continue;
 		}
 	}
 	
@@ -114,11 +115,7 @@ int main(int argc, char **argv) {
     // create the message listener thread
 	char *fifoName = "serverFIFO";
 	pthread_t listenerThread;
-
-	if (pthread_create(&listenerThread, NULL, messageListener, (void *)fifoName) != 0) {
-		perror("Error creating thread");
-		return 1;
-	}
+	pthread_create(&listenerThread, NULL, messageListener, NULL);
 
 
     while (1) {
